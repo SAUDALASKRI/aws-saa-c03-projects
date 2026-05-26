@@ -1,0 +1,60 @@
+# AWS SAA-C03 Projects — .gitignore
+
+# AWS Credentials (لا ترفع هذا أبداً!)
+.aws/
+*.pem
+*.key
+*credentials*
+*secret*
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# CloudFormation outputs
+*.output.json
+cdk.out/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+dist/
+build/
+
+# Node.js
+node_modules/
+npm-debug.log*
+.npm
+
+# Lambda packages
+*.zip
+!cloudformation/*.zip
+
+# Terraform (إذا استخدمته)
+*.tfstate
+*.tfstate.backup
+.terraform/
+*.tfvars
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+tmp/
+temp/
