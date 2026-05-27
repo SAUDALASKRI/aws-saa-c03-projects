@@ -1,53 +1,53 @@
-# 🏦 المشروع الثاني: نظام بنكي Serverless آمن ومتوافق
+# 🏦 Project 02: Secure Serverless Banking System
 
 <div align="center">
 
 <img src="https://img.shields.io/badge/AWS-Lambda-FF9900?style=for-the-badge&logo=amazonaws"/>
 <img src="https://img.shields.io/badge/AWS-DynamoDB-3F8624?style=for-the-badge&logo=amazonaws"/>
 <img src="https://img.shields.io/badge/Compliance-PCI--DSS-DD344C?style=for-the-badge"/>
-<img src="https://img.shields.io/badge/التكلفة-~$0_Free_Tier-00D084?style=for-the-badge"/>
-<img src="https://img.shields.io/badge/نطاق_الامتحان-Secure_Architectures-DD344C?style=for-the-badge"/>
+<img src="https://img.shields.io/badge/Est._Cost-~$0_Free_Tier-00D084?style=for-the-badge"/>
+<img src="https://img.shields.io/badge/Exam_Domain-Secure_Architectures-DD344C?style=for-the-badge"/>
 
 </div>
 
 ---
 
-## 🎯 هدف المشروع
+## 🎯 Project Goal
 
-بناء نظام معاملات مالية بالكامل **بدون سيرفرات** يشمل:
-- تحويل الأموال بين الحسابات
-- مصادقة ثنائية العوامل (MFA)
-- تشفير كامل للبيانات
-- سجل تدقيق لا يمكن التلاعب به
-- تطابق PCI-DSS وSOC2
+Build a fully serverless financial transaction system including:
+- Money transfers between accounts
+- Multi-Factor Authentication (MFA)
+- Full data encryption
+- Tamper-proof audit trail
+- PCI-DSS and SOC2 compliance
 
-**أفضل نقطة للبدء: التكلفة شبه صفر مع Free Tier!**
+**Best starting point: nearly zero cost with Free Tier!**
 
 ---
 
-## 🗺️ المعمارية الكاملة
+## 🗺️ Full Architecture
 
 ```
-المستخدم (Mobile/Web App)
+User (Mobile/Web App)
          │
          ▼
 ┌──────────────────────┐
-│  Amazon Cognito      │  ← تسجيل الدخول + MFA
+│  Amazon Cognito      │  ← Login + MFA
 │  User Pool           │
 └──────────┬───────────┘
            │ JWT Token
            ▼
 ┌──────────────────────┐
-│  API Gateway         │  ← بوابة الـ API الموحدة
+│  API Gateway         │  ← Unified API gateway
 │  (REST API)          │
-│  + Lambda Authorizer │  ← يتحقق من صلاحية الـ Token
+│  + Lambda Authorizer │  ← Validates token
 └──────────┬───────────┘
            │
     ┌──────┴──────────────┐
     │                     │
     ▼                     ▼
 ┌─────────┐         ┌──────────────────┐
-│ Lambda  │         │ Step Functions   │  ← للمعاملات المعقدة
+│ Lambda  │         │ Step Functions   │  ← Complex transactions
 │ Simple  │         │ (Transfer Money) │
 │ Actions │         └────────┬─────────┘
 └────┬────┘                  │
@@ -58,7 +58,7 @@
      │              └────────┬────────┘
      │                       ▼
      └──────────►  ┌─────────────────┐
-                   │    DynamoDB     │  ← قاعدة البيانات
+                   │    DynamoDB     │  ← Main database
                    │  (Transactions) │
                    └────────┬────────┘
                             │
@@ -74,75 +74,75 @@
              │ Lambda   │     │  SNS     │
              │(Notif.)  │     │(Alerts)  │
              └──────────┘     └──────────┘
-                   
-SECURITY LAYER (يعمل في الخلفية دائماً):
-┌─────────────────────────────────────────┐
-│ KMS (تشفير) + GuardDuty (كشف تهديدات) │
-│ CloudTrail (تسجيل كل API call)          │
-│ Macie (كشف بيانات حساسة في S3)          │
-│ AWS Config (مراقبة الإعدادات)           │
-└─────────────────────────────────────────┘
+
+SECURITY LAYER (always running in background):
+┌─────────────────────────────────────────────┐
+│ KMS (Encryption) + GuardDuty (Threat Det.)  │
+│ CloudTrail (Logs every API call)            │
+│ Macie (Detects sensitive data in S3)        │
+│ AWS Config (Monitors configuration drift)   │
+└─────────────────────────────────────────────┘
 ```
 
 ---
 
-## 📚 شرح كل خدمة من الصفر
+## 📚 Service Breakdown — From Scratch
 
-### 1️⃣ AWS Lambda — الحوسبة بدون سيرفرات
+### 1️⃣ AWS Lambda — Serverless Compute
 
-**المفهوم الأساسي:**
-بدلاً من شراء سيرفر يعمل 24/7، Lambda يُشغّل الكود **فقط عند الحاجة**.
+**The core concept:**
+Instead of buying a server running 24/7, Lambda runs your code **only when needed**.
 
 ```
-طريقة تقليدية:
-  سيرفر يعمل 24 ساعة × 30 يوم = 720 ساعة
-  حتى لو لم يأتِ أي مستخدم!
-  التكلفة: $50-200/شهر
+Traditional approach:
+  Server running 24 hrs × 30 days = 720 hours
+  Even if zero users visited!
+  Cost: $50-200/month
 
-مع Lambda:
-  يُشغَّل فقط عند وجود طلب
-  مليون استدعاء/شهر = مجاني تماماً! (Free Tier)
-  التكلفة: ~$0
+With Lambda:
+  Runs only when a request arrives
+  First 1 million calls/month = completely free! (Free Tier)
+  Cost: ~$0
 ```
 
-**كيف يعمل Lambda:**
+**How Lambda works:**
 ```
-1. يأتي طلب (API Call, S3 Event, Timer...)
-2. AWS "يُصحّي" Lambda (Cold Start: ~100ms أو Warm: ~5ms)
-3. ينفذ الكود
-4. يُعيد النتيجة
-5. ينتهي (لا يبقى شغال!)
+1. A trigger arrives (API call, S3 event, timer...)
+2. AWS "wakes up" Lambda (Cold Start: ~100ms or Warm: ~5ms)
+3. Executes your code
+4. Returns the result
+5. Shuts down (does NOT stay running!)
 ```
 
-**حدود Lambda المهمة للامتحان:**
+**Key Lambda limits for the exam:**
 
-| الخاصية | الحد |
-|---------|------|
-| وقت التنفيذ | 15 دقيقة كحد أقصى |
-| الذاكرة | 128MB → 10GB |
-| حجم الكود | 50MB (مضغوط) |
-| Concurrent Executions | 1,000 (يمكن زيادتها) |
-| /tmp Storage | 512MB → 10GB |
+| Property | Limit |
+|----------|-------|
+| Execution timeout | 15 minutes max |
+| Memory | 128MB → 10GB |
+| Code package size | 50MB (compressed) |
+| Concurrent executions | 1,000 (increasable) |
+| /tmp storage | 512MB → 10GB |
 
 **Cold Start vs Warm Start:**
 ```
-Cold Start: Lambda غير موجود → AWS يُحضّره → يُشغّل الكود
-           (200-1000ms تأخير — مشكلة للـ APIs الحساسة للسرعة)
+Cold Start: Lambda doesn't exist → AWS provisions it → runs code
+           (200-1000ms delay — problematic for latency-sensitive APIs)
 
-Warm Start: Lambda جاهز في الذاكرة → يُشغّل مباشرة
-           (5-50ms — سريع!)
+Warm Start: Lambda already in memory → runs immediately
+           (5-50ms — fast!)
 
-الحل: Provisioned Concurrency — يبقي Lambda "دافئاً" دائماً
+Solution: Provisioned Concurrency — keeps Lambda "warm" at all times
 ```
 
 ---
 
-### 2️⃣ Amazon API Gateway — بوابة الـ API
+### 2️⃣ Amazon API Gateway — API Entry Point
 
-**ما هو؟**
-"المدخل" الموحد لكل طلبات API. يستقبل HTTP requests ويوجهها للـ Lambda المناسب.
+**What is it?**
+The single unified entry point for all API requests. Receives HTTP requests and routes them to the appropriate Lambda function.
 
-**بنية الـ API في مشروعنا:**
+**Our API structure:**
 ```
 POST /auth/login         → Lambda: AuthHandler
 POST /auth/mfa/verify    → Lambda: MFAHandler
@@ -151,215 +151,201 @@ POST /transactions       → Lambda: InitiateTransfer
 GET  /transactions/{id}  → Lambda: GetTransaction
 ```
 
-**ميزات مهمة:**
+**Key features:**
 
 **1. Lambda Authorizer:**
 ```
-كل طلب API → API Gateway يرسل الـ JWT Token → Lambda Authorizer
+Every API request → API Gateway sends JWT Token → Lambda Authorizer
 Lambda Authorizer:
-  ✅ Token صالح → يسمح بالطلب
-  ❌ Token منتهي/مزوّر → يرفض (403 Forbidden)
+  ✅ Valid token  → allows the request
+  ❌ Expired/fake → rejects (403 Forbidden)
 ```
 
 **2. Request Throttling:**
 ```
-إعداد مثال:
-  Rate: 1000 requests/second
-  Burst: 2000 requests/second
+Example configuration:
+  Rate:  1,000 requests/second
+  Burst: 2,000 requests/second
 
-لو جاءت 5000 طلب/ثانية:
-  أول 2000 → تُعالج
-  الباقي → 429 Too Many Requests
+If 5,000 requests/second arrive:
+  First 2,000 → processed
+  Remaining   → 429 Too Many Requests
 ```
 
-**3. مراحل (Stages):**
+**3. Stages:**
 ```
-api.bank.com/dev/transactions    ← بيئة تطوير
-api.bank.com/staging/transactions ← بيئة اختبار
-api.bank.com/prod/transactions   ← الإنتاج
+api.bank.com/dev/transactions     ← Development environment
+api.bank.com/staging/transactions ← Testing environment
+api.bank.com/prod/transactions    ← Production
 ```
 
 ---
 
-### 3️⃣ Amazon DynamoDB — قاعدة البيانات NoSQL
+### 3️⃣ Amazon DynamoDB — NoSQL Database
 
-**لماذا DynamoDB وليس RDS؟**
+**Why DynamoDB instead of RDS?**
 
 | | DynamoDB | RDS |
 |--|---------|-----|
-| النوع | NoSQL (Key-Value) | SQL (Relational) |
-| الـ Scaling | تلقائي لا نهائي | يدوي، محدود |
-| الأداء | < 1ms دائماً | يعتمد على الحجم |
-| الـ Schema | مرن | ثابت |
-| التكلفة | ادفع للاستخدام | ادفع للسيرفر |
+| Type | NoSQL (Key-Value) | SQL (Relational) |
+| Scaling | Automatic, unlimited | Manual, limited |
+| Performance | < 1ms always | Depends on load |
+| Schema | Flexible | Fixed |
+| Cost | Pay per use | Pay per server |
 
-**Single-Table Design (الأهم):**
+**Single-Table Design (most important concept):**
 
-بدلاً من جداول منفصلة، نضع كل البيانات في جدول واحد:
+Instead of separate tables, we store everything in one table:
 
 ```
 Table: BankingApp
 
-PK (Partition Key)    | SK (Sort Key)        | Data
----------------------|---------------------|----------------------------------
-USER#u001            | PROFILE             | {name, email, phone, kyc_status}
-USER#u001            | ACCOUNT#acc001      | {balance: 5000, currency: SAR}
-USER#u001            | ACCOUNT#acc002      | {balance: 200, currency: USD}
-USER#u001            | TXN#2024-01-15#t001 | {amount: 500, type: DEBIT, ...}
-USER#u001            | TXN#2024-01-16#t002 | {amount: 1000, type: CREDIT, ...}
-ACCOUNT#acc001       | BALANCE             | {current: 5000, available: 4500}
+PK (Partition Key)    | SK (Sort Key)          | Data
+---------------------|------------------------|----------------------------------
+USER#u001            | PROFILE                | {name, email, phone, kyc_status}
+USER#u001            | ACCOUNT#acc001         | {balance: 5000, currency: SAR}
+USER#u001            | ACCOUNT#acc002         | {balance: 200,  currency: USD}
+USER#u001            | TXN#2024-01-15#t001    | {amount: 500, type: DEBIT, ...}
+USER#u001            | TXN#2024-01-16#t002    | {amount: 1000, type: CREDIT, ...}
+ACCOUNT#acc001       | BALANCE                | {current: 5000, available: 4500}
 ```
 
-**فائدة هذا الديزاين:**
-```sql
--- استعلام واحد يجلب كل بيانات المستخدم:
-PK = "USER#u001"  AND  SK begins_with "ACCOUNT"
--- أسرع بكثير من JOIN بين جداول!
+**Why this design?**
+```
+One query fetches all user accounts:
+  PK = "USER#u001"  AND  SK begins_with "ACCOUNT"
+  Much faster than JOINs across multiple tables!
 ```
 
 **Global Secondary Index (GSI):**
 ```
-إذا أردت البحث بـ Email:
+To search by email address:
   GSI: email-index
     PK: email
     SK: userId
-    
-مثال: "من يملك هذا الـ email؟"
+
+Example: "Who owns this email?"
 GetItem(GSI: email-index, PK: "user@email.com")
 ```
 
 **DynamoDB Streams:**
 ```
-كل تغيير في DynamoDB يُرسَل لـ Lambda تلقائياً:
+Every change in DynamoDB is automatically sent to Lambda:
 
-تحويل مالي يُسجَّل في DynamoDB
-  → DynamoDB Stream يلتقط التغيير
-  → Lambda يُرسل إشعار SMS/Email للعميل
-  → Lambda آخر يُحدّث الـ Analytics
+Transfer recorded in DynamoDB
+  → DynamoDB Stream captures the change
+  → Lambda sends SMS/Email notification to customer
+  → Another Lambda updates Analytics
 ```
 
 ---
 
-### 4️⃣ Amazon Cognito — إدارة الهوية والمصادقة
+### 4️⃣ Amazon Cognito — Identity & Authentication
 
-**ما يفعله Cognito:**
-- تسجيل المستخدمين (Sign Up)
-- تسجيل الدخول (Sign In)
-- المصادقة الثنائية (MFA)
-- التحقق من البريد الإلكتروني ورقم الهاتف
-- نسيت كلمة المرور
+**What Cognito does:**
+- User registration (Sign Up)
+- Login (Sign In)
+- Multi-Factor Authentication (MFA)
+- Email and phone number verification
+- Forgot password flow
 
-**مكونات Cognito:**
+**Cognito components:**
 
 **User Pool:**
-```
-قاعدة بيانات المستخدمين:
+```json
 {
-  userId: "user-abc-123",
-  email: "ahmed@gmail.com",
-  phone: "+966501234567",
-  mfaEnabled: true,
-  attributes: {
-    custom:account_type: "premium",
-    custom:kyc_status: "verified"
+  "userId": "user-abc-123",
+  "email": "ahmed@gmail.com",
+  "phone": "+966501234567",
+  "mfaEnabled": true,
+  "attributes": {
+    "custom:account_type": "premium",
+    "custom:kyc_status": "verified"
   }
 }
 ```
 
-**تدفق تسجيل الدخول:**
+**Login flow:**
 ```
-1. المستخدم يُدخل Email + Password
-2. Cognito يتحقق
-3. ✅ صحيح → يطلب رمز MFA
-4. مستخدم يُدخل رمز SMS (6 أرقام)
-5. ✅ صحيح → يُعطي JWT Tokens:
-   - Access Token  (صالح 1 ساعة)
-   - Refresh Token (صالح 30 يوم)
-   - ID Token (معلومات المستخدم)
-6. كل API call يحمل Access Token في الـ Header
+1. User enters Email + Password
+2. Cognito verifies credentials
+3. ✅ Correct → requests MFA code
+4. User enters 6-digit SMS code
+5. ✅ Correct → issues JWT Tokens:
+   - Access Token  (valid 1 hour)
+   - Refresh Token (valid 30 days)
+   - ID Token      (user info)
+6. Every API call carries Access Token in the Header
 ```
-
-**JWT Token مثال:**
-```json
-{
-  "sub": "user-abc-123",
-  "email": "ahmed@gmail.com",
-  "cognito:groups": ["premium-users"],
-  "exp": 1735689600,
-  "iat": 1735686000
-}
-```
-*(هذا مُشفَّر بـ Base64 ويمكن لـ Lambda Authorizer فك تشفيره)*
 
 ---
 
-### 5️⃣ AWS KMS — خدمة إدارة المفاتيح
+### 5️⃣ AWS KMS — Key Management Service
 
-**المشكلة:**
-بيانات البنك حساسة. يجب تشفيرها حتى لو سرق أحد الـ Hard Drive لن يقدر يقرأها.
+**The problem:**
+Bank data is highly sensitive. It must be encrypted so that even if someone steals a hard drive, they cannot read it.
 
-**أنواع التشفير:**
+**Encryption types:**
 ```
-Encryption at Rest (بيانات ساكنة):
-  DynamoDB → مشفر تلقائياً بـ KMS
-  S3 → SSE-KMS
-  
-Encryption in Transit (بيانات تتنقل):
-  HTTPS/TLS → كل الاتصالات مشفرة
+Encryption at Rest (stored data):
+  DynamoDB → automatically encrypted with KMS
+  S3       → SSE-KMS
+
+Encryption in Transit (data moving):
+  HTTPS/TLS → all connections encrypted
 ```
 
-**KMS Keys:**
+**KMS Key types:**
 ```
 Customer Managed Key (CMK):
-  - أنت تتحكم في الـ Key بالكامل
-  - تقدر تُعطّله فوراً (إذا حدث خرق أمني)
-  - تقدر تضبط من يستطيع استخدامه
+  - You have full control of the key
+  - Can disable it immediately (after a security breach)
+  - Can define exactly who can use it
 
 AWS Managed Key:
-  - AWS يديره
-  - أقل تحكماً لكن أسهل
+  - AWS manages it
+  - Less control, but simpler
 ```
 
-**مثال عملي:**
+**Practical example:**
 ```python
-# تشفير رقم حساب بنكي قبل تخزينه
 import boto3, base64
 
 kms = boto3.client('kms')
 
-# تشفير
+# Encrypt an IBAN before storing
 response = kms.encrypt(
     KeyId='arn:aws:kms:us-east-1:123456789:key/abc-123',
-    Plaintext='SA1234567890123456789012'  # رقم IBAN
+    Plaintext='SA1234567890123456789012'
 )
 encrypted_iban = base64.b64encode(response['CiphertextBlob']).decode()
-# يُخزَّن المشفَّر فقط في DynamoDB
+# Only the encrypted value is stored in DynamoDB
 
-# فك التشفير (عند عرضه للمستخدم)
+# Decrypt when showing to the user
 response = kms.decrypt(CiphertextBlob=base64.b64decode(encrypted_iban))
 original_iban = response['Plaintext'].decode()
 ```
 
 ---
 
-### 6️⃣ AWS Step Functions — تنسيق العمليات المعقدة
+### 6️⃣ AWS Step Functions — Workflow Orchestration
 
-**المشكلة:**
-تحويل المال يتطلب خطوات متعددة يجب أن تنجح كلها أو تُلغى كلها:
+**The problem:**
+A money transfer requires multiple steps that must ALL succeed or ALL be rolled back:
 
 ```
-❌ بدون Step Functions:
-1. اخصم من A ✅
-2. أضف لـ B ❌ (فشل الاتصال!)
-نتيجة: A خسر المال، B لم يستلم — كارثة!
+❌ Without Step Functions:
+1. Debit from A ✅
+2. Credit to B  ❌ (connection failed!)
+Result: A lost money, B never received it — catastrophic!
 
-✅ مع Step Functions (Saga Pattern):
-1. اخصم من A
-2. أضف لـ B
-3. إذا فشل أي خطوة → تراجع عن كل شيء (Compensate)
+✅ With Step Functions (Saga Pattern):
+1. Debit from A
+2. Credit to B
+3. If any step fails → roll back everything (Compensate)
 ```
 
-**State Machine لتحويل مالي:**
+**State Machine for a money transfer:**
 ```json
 {
   "StartAt": "ValidateTransfer",
@@ -401,64 +387,63 @@ original_iban = response['Plaintext'].decode()
 
 ---
 
-### 7️⃣ Amazon GuardDuty — كشف التهديدات بالذكاء الاصطناعي
+### 7️⃣ Amazon GuardDuty — AI-Powered Threat Detection
 
-**ما يفعله:**
-GuardDuty يراقب كل نشاط في حسابك 24/7 ويكشف السلوك الغريب.
+**What it does:**
+GuardDuty monitors all activity in your account 24/7 and detects unusual behavior.
 
-**أمثلة على ما يكتشفه:**
+**Examples of what it detects:**
 ```
-🚨 تنبيه 1: UnauthorizedAccess:EC2/TorClient
-   EC2 instance يتصل بشبكة Tor (مشبوه!)
+🚨 Alert 1: UnauthorizedAccess:EC2/TorClient
+   EC2 instance connecting to Tor network (suspicious!)
 
-🚨 تنبيه 2: CryptoCurrency:EC2/BitcoinTool.B
-   Server يُعدِّن عملات رقمية (تم اختراقه!)
+🚨 Alert 2: CryptoCurrency:EC2/BitcoinTool.B
+   Server mining cryptocurrency (it's been compromised!)
 
-🚨 تنبيه 3: UnauthorizedAccess:IAMUser/ConsoleLoginSuccess.B
-   تسجيل دخول من دولة لم يسجل منها هذا المستخدم قط
+🚨 Alert 3: UnauthorizedAccess:IAMUser/ConsoleLoginSuccess.B
+   Login from a country this user has never logged in from
 
-🚨 تنبيه 4: Exfiltration:S3/ObjectRead.Unusual
-   قراءة كميات ضخمة غير مألوفة من S3
+🚨 Alert 4: Exfiltration:S3/ObjectRead.Unusual
+   Unusually large amounts of data being read from S3
 ```
 
-**كيف يعمل:**
+**How it works:**
 ```
-GuardDuty يحلل:
-  ├── CloudTrail Logs (كل API calls)
-  ├── VPC Flow Logs (كل حركة الشبكة)
-  └── DNS Logs (كل استعلامات DNS)
-  
-ثم يقارن بـ:
-  ├── AWS Threat Intelligence
-  ├── ML models
-  └── الأنماط التاريخية لحسابك
+GuardDuty analyzes:
+  ├── CloudTrail Logs (all API calls)
+  ├── VPC Flow Logs (all network traffic)
+  └── DNS Logs (all DNS queries)
+
+Then compares against:
+  ├── AWS Threat Intelligence feeds
+  ├── ML behavioral models
+  └── Your account's historical patterns
 ```
 
 ---
 
-### 8️⃣ AWS CloudTrail — سجل كل شيء
+### 8️⃣ AWS CloudTrail — Immutable Audit Log
 
-**الفرق بين CloudTrail وغيره:**
+**The difference from other logging:**
 ```
-CloudWatch Logs: ماذا يفعل التطبيق
-CloudTrail:      من فعل ماذا في AWS Console/API
+CloudWatch Logs: what is the application doing?
+CloudTrail:      who did what in the AWS Console/API?
 
-مثال:
-  CloudTrail يسجل:
-  "في 2024-01-15 الساعة 14:32:05
-   المستخدم ahmed@company.com (من IP: 1.2.3.4)
-   حذف S3 bucket: customer-data-prod
-   من AWS Console في us-east-1"
+Example CloudTrail record:
+  "On 2024-01-15 at 14:32:05
+   User ahmed@company.com (from IP: 1.2.3.4)
+   Deleted S3 bucket: customer-data-prod
+   Via AWS Console in us-east-1"
 ```
 
-**لماذا مهم للبنك؟**
-- **PCI-DSS:** يتطلب audit trail لكل وصول لبيانات الكارت
-- **المراجعة القانونية:** "من وصل لبيانات العميل X يوم Y؟"
-- **الجنائيات الرقمية:** تحقيق في اختراق أمني
+**Why it matters for banking:**
+- **PCI-DSS:** Requires audit trail for every access to cardholder data
+- **Legal audit:** "Who accessed customer X's data on day Y?"
+- **Digital forensics:** Investigating a security breach
 
-**CloudTrail + Athena = قوة:**
+**CloudTrail + Athena = powerful queries:**
 ```sql
--- من وصل لـ DynamoDB في آخر 24 ساعة؟
+-- Who accessed DynamoDB in the last 24 hours?
 SELECT userIdentity.userName, eventTime, eventName, requestParameters
 FROM cloudtrail_logs
 WHERE eventSource = 'dynamodb.amazonaws.com'
@@ -468,11 +453,11 @@ ORDER BY eventTime DESC
 
 ---
 
-## 🛠️ خطوات التنفيذ التفصيلية
+## 🛠️ Step-by-Step Implementation
 
-### المرحلة الأولى: إعداد Cognito
+### Phase 1: Cognito Setup
 
-**الخطوة 1: إنشاء User Pool**
+**Step 1: Create User Pool**
 
 ```
 Cognito → User Pools → Create:
@@ -486,7 +471,7 @@ Sign-in options:
 Password policy:
   Minimum length: 12
   ✅ Uppercase
-  ✅ Lowercase  
+  ✅ Lowercase
   ✅ Numbers
   ✅ Special characters
 
@@ -498,7 +483,7 @@ User verification:
   ✅ Email verification required
 ```
 
-**الخطوة 2: إنشاء App Client**
+**Step 2: Create App Client**
 ```
 User Pool → App clients → Create:
   Name: banking-mobile-app
@@ -510,50 +495,39 @@ User Pool → App clients → Create:
 
 ---
 
-### المرحلة الثانية: DynamoDB
+### Phase 2: DynamoDB
 
-**الخطوة 3: إنشاء الجدول**
+**Step 3: Create the Table**
 
-```bash
-aws dynamodb create-table \
-  --table-name BankingApp \
-  --billing-mode PAY_PER_REQUEST \
-  --attribute-definitions \
-      AttributeName=PK,AttributeType=S \
-      AttributeName=SK,AttributeType=S \
-      AttributeName=GSI1PK,AttributeType=S \
-      AttributeName=GSI1SK,AttributeType=S \
-  --key-schema \
-      AttributeName=PK,KeyType=HASH \
-      AttributeName=SK,KeyType=RANGE \
-  --global-secondary-indexes \
-      '[{
-        "IndexName": "GSI1",
-        "Keys": [
-          {"AttributeName":"GSI1PK","KeyType":"HASH"},
-          {"AttributeName":"GSI1SK","KeyType":"RANGE"}
-        ],
-        "Projection": {"ProjectionType":"ALL"}
-      }]' \
-  --sse-specification \
-      Enabled=true,SSEType=KMS \
-  --stream-specification \
-      StreamEnabled=true,StreamViewType=NEW_AND_OLD_IMAGES \
+```powershell
+aws dynamodb create-table `
+  --table-name BankingApp `
+  --billing-mode PAY_PER_REQUEST `
+  --attribute-definitions `
+      AttributeName=PK,AttributeType=S `
+      AttributeName=SK,AttributeType=S `
+  --key-schema `
+      AttributeName=PK,KeyType=HASH `
+      AttributeName=SK,KeyType=RANGE `
+  --sse-specification `
+      Enabled=true,SSEType=KMS `
+  --stream-specification `
+      StreamEnabled=true,StreamViewType=NEW_AND_OLD_IMAGES `
   --region us-east-1
 ```
 
-> 💡 `PAY_PER_REQUEST` = ادفع فقط على الاستخدام. مجاني في Free Tier لأول 25GB!
+> 💡 `PAY_PER_REQUEST` = pay only for what you use. Free in Free Tier for first 25GB!
 
 ---
 
-### المرحلة الثالثة: Lambda Functions
+### Phase 3: Lambda Functions
 
-**الخطوة 4: إنشاء IAM Role للـ Lambda**
+**Step 4: Create IAM Role for Lambda**
 
-```bash
-# إنشاء Role
-aws iam create-role \
-  --role-name BankingLambdaRole \
+```powershell
+# Create role
+aws iam create-role `
+  --role-name BankingLambdaRole `
   --assume-role-policy-document '{
     "Version": "2012-10-17",
     "Statement": [{
@@ -563,78 +537,57 @@ aws iam create-role \
     }]
   }'
 
-# إضافة صلاحيات
-aws iam attach-role-policy \
-  --role-name BankingLambdaRole \
+# Attach basic permissions
+aws iam attach-role-policy `
+  --role-name BankingLambdaRole `
   --policy-arn arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
-
-# صلاحية DynamoDB (Least Privilege!)
-aws iam put-role-policy \
-  --role-name BankingLambdaRole \
-  --policy-name DynamoDBAccess \
-  --policy-document '{
-    "Version": "2012-10-17",
-    "Statement": [{
-      "Effect": "Allow",
-      "Action": [
-        "dynamodb:GetItem",
-        "dynamodb:PutItem",
-        "dynamodb:UpdateItem",
-        "dynamodb:Query"
-      ],
-      "Resource": "arn:aws:dynamodb:us-east-1:*:table/BankingApp*"
-    }]
-  }'
 ```
 
-**الخطوة 5: كود Lambda — التحقق من الرصيد**
+**Step 5: Lambda Code — Check Balance**
 
 ```python
 # lambda/check_balance/handler.py
 import json
 import boto3
-from decimal import Decimal
 
 dynamodb = boto3.resource('dynamodb')
 table = dynamodb.Table('BankingApp')
 
 def lambda_handler(event, context):
     """
-    التحقق من رصيد الحساب
-    Input: {userId, accountId}
+    Check account balance
+    Input:  {userId, accountId}
     Output: {balance, available_balance, currency}
     """
-    
-    user_id = event['userId']
+    user_id    = event['userId']
     account_id = event['accountId']
-    
+
     try:
-        # جلب بيانات الحساب
         response = table.get_item(
             Key={
                 'PK': f'USER#{user_id}',
                 'SK': f'ACCOUNT#{account_id}'
             }
         )
-        
+
         if 'Item' not in response:
             return {
                 'statusCode': 404,
                 'body': json.dumps({'error': 'Account not found'})
             }
-        
+
         account = response['Item']
-        
+
         return {
             'statusCode': 200,
             'body': json.dumps({
-                'accountId': account_id,
-                'balance': float(account['balance']),
-                'available': float(account['available_balance']),
-                'currency': account['currency']
+                'accountId':  account_id,
+                'balance':    float(account['balance']),
+                'available':  float(account['available_balance']),
+                'currency':   account['currency']
             })
         }
-        
+
     except Exception as e:
         print(f"Error: {str(e)}")
         return {
@@ -643,88 +596,59 @@ def lambda_handler(event, context):
         }
 ```
 
-**الخطوة 6: نشر Lambda**
+**Step 6: Deploy Lambda**
 
-```bash
-# ضغط الكود
-cd lambda/check_balance
+```powershell
+# Package the code
 Compress-Archive -Path handler.py -DestinationPath function.zip
 
-# رفع الدالة
-aws lambda create-function \
-  --function-name CheckBalance \
-  --runtime python3.12 \
-  --handler handler.lambda_handler \
-  --zip-file fileb://function.zip \
-  --role arn:aws:iam::YOUR_ACCOUNT_ID:role/BankingLambdaRole \
-  --timeout 30 \
-  --memory-size 256 \
+# Create the function
+aws lambda create-function `
+  --function-name CheckBalance `
+  --runtime python3.12 `
+  --handler handler.lambda_handler `
+  --zip-file fileb://function.zip `
+  --role arn:aws:iam::YOUR_ACCOUNT_ID:role/BankingLambdaRole `
+  --timeout 30 `
+  --memory-size 256 `
   --environment Variables='{TABLE_NAME=BankingApp}'
 ```
 
 ---
 
-### المرحلة الرابعة: API Gateway
+### Phase 4: Security
 
-**الخطوة 7: إنشاء REST API**
+**Step 7: Enable CloudTrail**
 
-```bash
-# إنشاء API
-aws apigateway create-rest-api \
-  --name banking-api \
-  --endpoint-configuration types=REGIONAL
-
-# إنشاء Resource
-aws apigateway create-resource \
-  --rest-api-id YOUR_API_ID \
-  --parent-id ROOT_RESOURCE_ID \
-  --path-part accounts
-
-# إضافة Method GET
-aws apigateway put-method \
-  --rest-api-id YOUR_API_ID \
-  --resource-id RESOURCE_ID \
-  --http-method GET \
-  --authorization-type COGNITO_USER_POOLS \
-  --authorizer-id YOUR_AUTHORIZER_ID
-```
-
----
-
-### المرحلة الخامسة: الأمان
-
-**الخطوة 8: تفعيل CloudTrail**
-
-```bash
-aws cloudtrail create-trail \
-  --name banking-audit-trail \
-  --s3-bucket-name banking-cloudtrail-logs \
-  --is-multi-region-trail \
-  --enable-log-file-validation  # ← يضمن عدم التلاعب بالـ logs
+```powershell
+aws cloudtrail create-trail `
+  --name banking-audit-trail `
+  --s3-bucket-name banking-cloudtrail-logs `
+  --is-multi-region-trail `
+  --enable-log-file-validation
 
 aws cloudtrail start-logging --name banking-audit-trail
 ```
 
-**الخطوة 9: تفعيل GuardDuty**
+**Step 8: Enable GuardDuty**
 
-```bash
-aws guardduty create-detector \
-  --enable \
+```powershell
+aws guardduty create-detector `
+  --enable `
   --finding-publishing-frequency FIFTEEN_MINUTES
 
-# سيبدأ GuardDuty بالتحليل خلال دقائق!
+# GuardDuty will start analyzing within minutes!
 ```
 
 ---
 
-## 📊 CloudFormation — النشر الكامل تلقائياً
+## 📊 CloudFormation Template
 
 ```yaml
 # cloudformation/02-serverless-backend.yaml
 AWSTemplateFormatVersion: '2010-09-09'
 
 Resources:
-  # DynamoDB Table
   BankingTable:
     Type: AWS::DynamoDB::Table
     Properties:
@@ -747,11 +671,7 @@ Resources:
         StreamViewType: NEW_AND_OLD_IMAGES
       PointInTimeRecoverySpecification:
         PointInTimeRecoveryEnabled: true
-      Tags:
-        - Key: Project
-          Value: BankingApp
 
-  # Lambda Execution Role
   LambdaExecutionRole:
     Type: AWS::IAM::Role
     Properties:
@@ -779,7 +699,6 @@ Resources:
                   - dynamodb:TransactWriteItems
                 Resource: !GetAtt BankingTable.Arn
 
-  # Cognito User Pool
   UserPool:
     Type: AWS::Cognito::UserPool
     Properties:
@@ -794,97 +713,83 @@ Resources:
         RequireLowercase: true
         RequireNumbers: true
         RequireSymbols: true
-      AutoVerifiedAttributes:
-        - email
 
-  # GuardDuty
   GuardDutyDetector:
     Type: AWS::GuardDuty::Detector
     Properties:
       Enable: true
       FindingPublishingFrequency: FIFTEEN_MINUTES
-
-Outputs:
-  TableName:
-    Value: !Ref BankingTable
-    Export:
-      Name: BankingTableName
-
-  UserPoolId:
-    Value: !Ref UserPool
-    Export:
-      Name: BankingUserPoolId
 ```
 
 ---
 
-## 🧪 أسئلة امتحان SAA-C03
+## 🧪 Expected SAA-C03 Exam Questions
 
-**❓ السؤال 1:**
-تطبيق Lambda يحتاج قراءة بيانات حساسة من DynamoDB. ما أفضل طريقة لمنحه الصلاحية؟
+**Question 1:**
+A Lambda function needs to read sensitive data from DynamoDB. What is the best way to grant it permission?
 
-**✅ الجواب:** IAM Role مرتبط بالـ Lambda — لا تضع Access Keys في الكود أبداً!
-
----
-
-**❓ السؤال 2:**
-تحويل مالي يتضمن 5 خطوات. إذا فشلت الخطوة 4، ما الأداة التي تتراجع عن الخطوات السابقة؟
-
-**✅ الجواب:** AWS Step Functions مع Saga Pattern + Compensating Transactions
+**Answer:** An IAM Role attached to the Lambda function — never put Access Keys in your code!
 
 ---
 
-**❓ السؤال 3:**
-البنك يحتاج audit trail لا يمكن حذفه حتى من المديرين. كيف؟
+**Question 2:**
+A money transfer involves 5 steps. If step 4 fails, what AWS service rolls back the previous steps?
 
-**✅ الجواب:** CloudTrail → S3 مع Object Lock (WORM) + Log File Validation
-
----
-
-**❓ السؤال 4:**
-Lambda تُعالج طلبات بطيئة (timeout بعد 2 ثانية). كيف تحسن الأداء؟
-
-**✅ الجواب:**
-1. زيادة الذاكرة (CPU يزيد تلقائياً مع RAM)
-2. Connection Pooling للـ Database
-3. Provisioned Concurrency لإزالة Cold Starts
+**Answer:** AWS Step Functions with the Saga Pattern + Compensating Transactions.
 
 ---
 
-## ✅ قائمة التحقق النهائية
+**Question 3:**
+A bank needs an audit trail that cannot be deleted even by administrators. How?
+
+**Answer:** CloudTrail → S3 with Object Lock (WORM mode) + Log File Validation enabled.
+
+---
+
+**Question 4:**
+Lambda is timing out after 2 seconds on slow requests. How do you improve performance?
+
+**Answer:**
+1. Increase memory (CPU scales automatically with RAM in Lambda)
+2. Use connection pooling for database
+3. Enable Provisioned Concurrency to eliminate cold starts
+
+---
+
+## ✅ Final Checklist
 
 ```
 Authentication:
-□ Cognito User Pool مع MFA إجباري
-□ Password Policy صارم
-□ Email/Phone verification
-□ JWT Token expiry مناسب
+□ Cognito User Pool with mandatory MFA
+□ Strong password policy enforced
+□ Email/phone verification enabled
+□ Appropriate JWT token expiry times
 
 API & Logic:
-□ API Gateway مع Cognito Authorizer
-□ Lambda Functions بـ Least Privilege IAM
-□ Step Functions للمعاملات المعقدة
-□ SQS Dead Letter Queue للـ failures
+□ API Gateway with Cognito Authorizer
+□ Lambda functions with Least Privilege IAM roles
+□ Step Functions for complex multi-step transactions
+□ SQS Dead Letter Queue for failed messages
 
 Database:
-□ DynamoDB مع KMS encryption
-□ Point-in-Time Recovery مفعّل
-□ DynamoDB Streams للـ event processing
-□ Backup policy محدد
+□ DynamoDB with KMS encryption enabled
+□ Point-in-Time Recovery (PITR) enabled
+□ DynamoDB Streams for event processing
+□ Backup policy defined
 
 Security & Compliance:
-□ CloudTrail في كل الـ regions
-□ GuardDuty مفعّل
-□ Macie لحماية البيانات الحساسة في S3
-□ AWS Config Rules للـ compliance
-□ VPC Endpoints (لا traffic عبر الإنترنت)
-□ KMS CMK لكل نوع بيانات
+□ CloudTrail enabled in all regions
+□ GuardDuty enabled
+□ Macie enabled for S3 sensitive data protection
+□ AWS Config Rules for compliance monitoring
+□ VPC Endpoints (zero internet traffic for internal services)
+□ KMS CMK per data classification
 ```
 
 ---
 
 <div align="center">
 
-[⬅️ المشروع الأول](../project-01-streaming/README.md) | [⬆️ الرئيسية](../README.md) | [➡️ المشروع الثالث](../project-03-data-lake/README.md)
+[⬅️ Project 01](../project-01-streaming/README.md) | [⬆️ Main README](../README.md) | [➡️ Project 03](../project-03-data-lake/README.md)
 
 </div>

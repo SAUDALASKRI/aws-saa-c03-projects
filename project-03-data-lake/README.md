@@ -1,4 +1,4 @@
-# 📊 المشروع الثالث: منصة تحليلات بيانات ضخمة — Data Lake
+# 📊 Project 03: Big Data Analytics Platform — Enterprise Data Lake
 
 <div align="center">
 
@@ -6,25 +6,25 @@
 <img src="https://img.shields.io/badge/AWS-Glue_ETL-FF9900?style=for-the-badge&logo=amazonaws"/>
 <img src="https://img.shields.io/badge/AWS-Athena-8C4FFF?style=for-the-badge&logo=amazonaws"/>
 <img src="https://img.shields.io/badge/AWS-SageMaker-00B4D8?style=for-the-badge&logo=amazonaws"/>
-<img src="https://img.shields.io/badge/نطاق_الامتحان-High_Performing-FF9900?style=for-the-badge"/>
+<img src="https://img.shields.io/badge/Exam_Domain-High_Performing-FF9900?style=for-the-badge"/>
 
 </div>
 
-> 🚧 **هذا المشروع قيد الإعداد** — سيُكتمل بعد إتقان P01 وP02
+> 🚧 **This project is under construction** — implement after completing P01 and P02
 
 ---
 
-## 🎯 هدف المشروع
+## 🎯 Project Goal
 
-بناء Data Lake Enterprise-grade لتحليل Petabytes من البيانات مع:
-- **Medallion Architecture** (Bronze → Silver → Gold)
-- **Real-time Streaming** بـ Kinesis
-- **ML Pipeline** بـ SageMaker
-- **BI Dashboards** بـ QuickSight
+Build an enterprise-grade Data Lake to analyze petabytes of data including:
+- **Medallion Architecture** (Bronze → Silver → Gold layers)
+- **Real-time streaming** with Kinesis
+- **ML pipeline** with SageMaker
+- **BI dashboards** with QuickSight
 
 ---
 
-## 🗺️ المعمارية المختصرة
+## 🗺️ Architecture Overview
 
 ```
 Data Sources → Kinesis Firehose → S3 Raw (Bronze)
@@ -44,35 +44,52 @@ Data Sources → Kinesis Firehose → S3 Raw (Bronze)
 
 ---
 
-## 📚 الخدمات التي ستتعلمها
+## 📚 Services You Will Learn
 
-| الخدمة | الدور | المفهوم الأساسي |
-|--------|-------|----------------|
-| **Amazon Kinesis** | استيعاب البيانات الآنية | مثل conveyor belt للبيانات |
-| **AWS Glue** | ETL (تحويل البيانات) | ينظف ويحول البيانات |
-| **Amazon Athena** | استعلامات SQL على S3 | SQL بدون database! |
-| **Amazon Redshift** | Data Warehouse | تحليلات ضخمة معقدة |
-| **AWS SageMaker** | تدريب نماذج ML | بناء ونشر AI models |
-| **Amazon QuickSight** | BI Dashboards | تصويرات بيانية تفاعلية |
-| **AWS Lake Formation** | أمان Data Lake | من يرى أي بيانات |
+| Service | Role | Core Concept |
+|---------|------|-------------|
+| **Amazon Kinesis** | Real-time data ingestion | Like a conveyor belt for data |
+| **AWS Glue** | ETL (data transformation) | Cleans and transforms data |
+| **Amazon Athena** | SQL queries on S3 | SQL without a database server! |
+| **Amazon Redshift** | Data Warehouse | Complex large-scale analytics |
+| **AWS SageMaker** | Train ML models | Build and deploy AI models |
+| **Amazon QuickSight** | BI dashboards | Interactive data visualizations |
+| **AWS Lake Formation** | Data Lake security | Who can see which data |
 
 ---
 
-## 🔜 خارطة التنفيذ
+## 🔜 Implementation Roadmap
 
 ```
-الأسبوع 1: إعداد S3 Medallion Architecture
-الأسبوع 2: Kinesis Firehose للـ Real-time Ingestion
-الأسبوع 3: Glue Crawlers + ETL Jobs
-الأسبوع 4: Athena + Redshift للـ Queries
-الأسبوع 5: SageMaker Pipeline
-الأسبوع 6: QuickSight Dashboards + Lake Formation
+Week 1: Set up S3 Medallion Architecture (Bronze/Silver/Gold)
+Week 2: Kinesis Data Firehose for real-time ingestion
+Week 3: Glue Crawlers + ETL Jobs
+Week 4: Athena + Redshift for queries
+Week 5: SageMaker ML Pipeline
+Week 6: QuickSight Dashboards + Lake Formation permissions
+```
+
+---
+
+## 🔑 Key Exam Concepts
+
+**Kinesis Family (for the exam):**
+```
+Kinesis Data Streams:   Real-time, you control shards, 1-365 day retention
+Kinesis Data Firehose:  Managed, auto-scales, loads to S3/Redshift/OpenSearch
+Kinesis Data Analytics: Run SQL queries on streaming data in real-time
+```
+
+**Glue vs EMR:**
+```
+AWS Glue:  Serverless ETL, pay per job run, great for straightforward transforms
+Amazon EMR: Managed Hadoop/Spark cluster, more control, better for complex ML
 ```
 
 ---
 
 <div align="center">
 
-[⬅️ المشروع الثاني](../project-02-serverless-banking/README.md) | [⬆️ الرئيسية](../README.md) | [➡️ المشروع الرابع](../project-04-saas-multitenant/README.md)
+[⬅️ Project 02](../project-02-serverless-banking/README.md) | [⬆️ Main README](../README.md) | [➡️ Project 04](../project-04-saas-multitenant/README.md)
 
 </div>

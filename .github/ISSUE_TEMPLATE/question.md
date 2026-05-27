@@ -1,24 +1,24 @@
 ---
-name: سؤال أو استفسار
-about: سؤال عن أي خطوة في المشاريع
+name: Question or Inquiry
+about: A question about any step in the projects
 title: '[QUESTION] '
 labels: question
 ---
 
-## 📌 المشروع المتعلق بالسؤال
+## 📌 Related Project
 - [ ] P01 - Streaming Platform
 - [ ] P02 - Serverless Banking
 - [ ] P03 - Data Lake
 - [ ] P04 - SaaS Multi-Tenant
 - [ ] P05 - IoT Smart City
 
-## ❓ سؤالك
-اكتب سؤالك بوضوح هنا
+## ❓ Your Question
+Write your question clearly here
 
-## 🔍 ما جربته
-اذكر ما جربته قبل طرح السؤال
+## 🔍 What I tried
+Describe what you already attempted before asking
 
-## 💻 بيئة العمل
+## 💻 Environment
 - OS: Windows / Mac / Linux
-- AWS Region: 
-- الخدمة المتعلقة:
+- AWS Region:
+- Related Service:

@@ -1,4 +1,4 @@
-# 🎬 المشروع الأول: منصة Streaming إعلامية عالية التوفر
+# 🎬 Project 01: High-Availability Media Streaming Platform
 
 <div align="center">
 
@@ -6,42 +6,42 @@
 <img src="https://img.shields.io/badge/AWS-MediaLive-E7157B?style=for-the-badge&logo=amazonaws"/>
 <img src="https://img.shields.io/badge/AWS-Auto_Scaling-FF9900?style=for-the-badge&logo=amazonaws"/>
 <img src="https://img.shields.io/badge/Availability-99.99%25-00D084?style=for-the-badge"/>
-<img src="https://img.shields.io/badge/نطاق_الامتحان-Resilient_Architectures-0095D5?style=for-the-badge"/>
+<img src="https://img.shields.io/badge/Exam_Domain-Resilient_Architectures-0095D5?style=for-the-badge"/>
 
 </div>
 
 ---
 
-## 🎯 هدف المشروع
+## 🎯 Project Goal
 
-بناء منصة بث مباشر وفيديو عند الطلب (VOD) تشبه Netflix أو MBC Shahid تتحمل:
-- **ملايين المستخدمين المتزامنين**
-- **Live streaming** بدون تأخير
-- **99.99% uptime** = لا يزيد التوقف عن 52 دقيقة سنوياً
-- **حماية DDoS** كاملة
+Build a live streaming and Video-on-Demand (VOD) platform similar to Netflix or YouTube that can handle:
+- **Millions of concurrent users**
+- **Live streaming** with no buffering
+- **99.99% uptime** = less than 52 minutes of downtime per year
+- **Full DDoS protection**
 
 ---
 
-## 🗺️ المعمارية الكاملة
+## 🗺️ Full Architecture
 
 ```
-المستخدم
-    │
-    ▼
+User
+ │
+ ▼
 ┌─────────────────────────────────────┐
-│  Route 53 (DNS + Health Checks)     │  ← يوجه المستخدم لأقرب منطقة
+│  Route 53 (DNS + Health Checks)     │  ← Routes user to nearest region
 └─────────────────┬───────────────────┘
                   │
                   ▼
 ┌─────────────────────────────────────┐
-│  AWS WAF + Shield Advanced          │  ← يحمي من الهجمات
+│  AWS WAF + Shield Advanced          │  ← Protects against attacks
 └─────────────────┬───────────────────┘
                   │
                   ▼
 ┌─────────────────────────────────────┐
-│  CloudFront (CDN - 400+ نقطة)       │  ← يسرّع التوصيل للمستخدم
-│  - Cache للـ VOD                    │
-│  - Signed URLs للمحتوى المحمي       │
+│  CloudFront (CDN - 400+ locations)  │  ← Delivers content fast
+│  - Caches VOD content               │
+│  - Signed URLs for protected content│
 └──────────┬──────────────────────────┘
            │
     ┌──────┴──────┐
@@ -55,12 +55,12 @@
              ▼                        ▼
       ┌────────────┐          ┌────────────┐
       │  EC2 ASG   │          │  EC2 ASG   │
-      │  AZ-1a     │          │  AZ-1b     │  ← في منطقتين للـ HA
+      │  AZ-1a     │          │  AZ-1b     │  ← Two AZs for HA
       └─────┬──────┘          └─────┬──────┘
             └──────────┬────────────┘
                        ▼
               ┌─────────────────┐
-              │  ElastiCache    │  ← Cache للـ Sessions والـ API
+              │  ElastiCache    │  ← Sessions + API cache
               │  Redis Cluster  │
               └────────┬────────┘
                        │
@@ -68,307 +68,310 @@
               ▼                 ▼
        ┌────────────┐   ┌────────────┐
        │  RDS Aurora│   │  DynamoDB  │
-       │  Multi-AZ  │   │  (Metadata)│
+       │  Multi-AZ  │   │ (Metadata) │
        └────────────┘   └────────────┘
 
 LIVE STREAMING PIPELINE:
-مصدر البث → MediaLive → MediaPackage → CloudFront → المشاهدون
+Source → MediaLive → MediaPackage → CloudFront → Viewers
 ```
 
 ---
 
-## 📚 شرح كل خدمة من الصفر
+## 📚 Service Breakdown — From Scratch
 
-### 1️⃣ Amazon Route 53 — نظام أسماء النطاقات
+### 1️⃣ Amazon Route 53 — DNS Service
 
-**ما هو؟**
-تخيل Route 53 كـ "دليل هاتف الإنترنت". عندما تكتب `www.shahid.net` في المتصفح، Route 53 هو الذي يترجم هذا الاسم إلى عنوان IP حقيقي.
+**What is it?**
+Think of Route 53 as the "phone book of the internet." When you type `www.myplatform.com`, Route 53 translates that name into a real IP address.
 
-**لماذا نستخدمه في المشروع؟**
-- **Latency Routing:** يوجه المستخدم السعودي لـ server في البحرين، والأوروبي لـ server في أيرلندا
-- **Health Checks:** إذا فشل server، Route 53 يوجه التراث تلقائياً للـ server الاحتياطي
+**Why we use it in this project:**
+- **Latency Routing:** Routes a Saudi user to the Bahrain server, and a European user to the Ireland server
+- **Health Checks:** If a server fails, Route 53 automatically redirects traffic to the backup server
 
-**المصطلحات المهمة للامتحان:**
-| المصطلح | المعنى |
-|---------|--------|
-| Hosted Zone | مجلد يحتوي على إعدادات نطاقك |
-| Record Type A | يربط اسم النطاق بعنوان IPv4 |
-| TTL | كم تُخزَّن النتيجة في الـ cache (بالثواني) |
-| Failover Routing | التحويل التلقائي عند الفشل |
-| Latency Routing | التوجيه لأقرب server |
+**Key SAA-C03 Terms:**
 
----
-
-### 2️⃣ AWS WAF + Shield — درع الحماية
-
-**ما هو WAF؟**
-WAF = Web Application Firewall. مثل حارس الأمن في المدخل — يفحص كل طلب قادم ويمنع الخطرة.
-
-**ما هو Shield؟**
-- **Shield Standard:** مجاني، يحمي من هجمات DDoS الأساسية تلقائياً
-- **Shield Advanced:** مدفوع ($3000/شهر)، يحمي من هجمات ضخمة ويوفر فريق استجابة AWS
-
-**مثال حقيقي:**
-```
-هجوم DDoS يرسل 10 مليون طلب/ثانية لموقعك
-  → Shield يكتشف النمط غير الطبيعي
-  → يعزل الـ traffic الخبيث
-  → موقعك يبقى شغال للمستخدمين الحقيقيين ✅
-```
-
-**قواعد WAF الشائعة:**
-- منع IP بلد معين
-- منع طلبات تحتوي على SQL Injection
-- Rate Limiting: منع أكثر من 1000 طلب/دقيقة من نفس الـ IP
+| Term | Meaning |
+|------|---------|
+| Hosted Zone | A container for your domain's DNS records |
+| A Record | Maps a domain name to an IPv4 address |
+| TTL | How long a result is cached (in seconds) |
+| Failover Routing | Automatic rerouting when primary fails |
+| Latency Routing | Routes to the nearest/fastest server |
 
 ---
 
-### 3️⃣ Amazon CloudFront — شبكة توصيل المحتوى (CDN)
+### 2️⃣ AWS WAF + Shield — Protection Layer
 
-**المشكلة بدون CDN:**
+**What is WAF?**
+WAF = Web Application Firewall. Like a security guard at the entrance — it inspects every incoming request and blocks dangerous ones.
+
+**What is Shield?**
+- **Shield Standard:** Free, automatically protects against basic DDoS attacks
+- **Shield Advanced:** Paid ($3,000/mo), protects against large-scale attacks with an AWS response team
+
+**Real-world example:**
 ```
-مستخدم في الرياض يطلب فيديو
-  → الطلب يذهب لـ server في أمريكا (تأخير 200ms)
-  → Server يرسل الفيديو كاملاً عبر المحيط (بطيء جداً!)
+A DDoS attack sends 10 million requests/second to your site
+  → Shield detects the abnormal pattern
+  → Isolates malicious traffic
+  → Your site stays online for real users ✅
 ```
 
-**الحل مع CloudFront:**
+**Common WAF Rules:**
+- Block traffic from specific countries
+- Block requests containing SQL Injection patterns
+- Rate Limiting: block more than 1,000 requests/minute from one IP
+
+---
+
+### 3️⃣ Amazon CloudFront — Content Delivery Network (CDN)
+
+**The problem without a CDN:**
 ```
-مستخدم في الرياض يطلب نفس الفيديو
-  → CloudFront يتحقق: هل الفيديو موجود في نقطة الحضور بالرياض؟
-  → نعم → يرسله مباشرة (تأخير 5ms فقط!) ✅
-  → لا → يجلبه من الـ origin مرة واحدة ويخزنه للمرات القادمة
+User in Riyadh requests a video
+  → Request travels to a server in the US (200ms latency)
+  → Server sends the full video across the ocean (very slow!)
 ```
 
-**CloudFront لديه 400+ نقطة حضور (Edge Location) حول العالم!**
-
-**المصطلحات المهمة:**
-| المصطلح | المعنى |
-|---------|--------|
-| Origin | المصدر الأصلي للمحتوى (S3 أو ALB) |
-| Edge Location | نقطة الحضور القريبة من المستخدم |
-| Cache Hit | المحتوى موجود في الـ Cache (سريع) |
-| Cache Miss | المحتوى غير موجود، يُجلب من الـ Origin (بطيء) |
-| TTL | مدة بقاء الملف في الـ Cache |
-| Signed URL | رابط مشفر ومحمي لمحتوى مدفوع |
-
-**Behaviors في CloudFront:**
+**The solution with CloudFront:**
 ```
-/videos/*     → Cache لمدة 24 ساعة (محتوى ثابت)
-/api/*        → لا Cache (بيانات ديناميكية)
-/live/*       → Redirect لـ MediaPackage
+User in Riyadh requests the same video
+  → CloudFront checks: is the video cached at the Riyadh edge location?
+  → YES → Delivers immediately (only 5ms latency!) ✅
+  → NO  → Fetches from origin once, caches it for future requests
+```
+
+**CloudFront has 400+ Edge Locations worldwide!**
+
+**Key Terms:**
+
+| Term | Meaning |
+|------|---------|
+| Origin | The original source of content (S3 or ALB) |
+| Edge Location | The nearby point of presence serving the user |
+| Cache Hit | Content found in cache (fast) |
+| Cache Miss | Content not in cache, fetched from origin (slower) |
+| TTL | How long a file stays in cache |
+| Signed URL | An encrypted, time-limited link for protected content |
+
+**CloudFront Behaviors:**
+```
+/videos/*  → Cache for 24 hours (static content)
+/api/*     → No cache (dynamic data)
+/live/*    → Redirect to MediaPackage
 ```
 
 ---
 
-### 4️⃣ Amazon S3 — التخزين الأساسي
+### 4️⃣ Amazon S3 — Core Storage
 
-**ما هو S3؟**
-مستودع تخزين لا نهائي. تخيله كـ Google Drive للمطورين — يخزن أي نوع ملف بأي حجم.
+**What is it?**
+An infinite storage repository. Think of it as Google Drive for developers — stores any file type, any size.
 
-**في مشروع Streaming:**
+**In our streaming project:**
 ```
 s3://my-streaming-platform-videos/
-├── raw/           ← الفيديوهات الأصلية بجودة عالية
-├── processed/     ← نفس الفيديو بجودات مختلفة (1080p, 720p, 480p)
-├── thumbnails/    ← الصور المصغرة
-└── subtitles/     ← ملفات الترجمة
+├── raw/           ← Original high-quality video files
+├── processed/     ← Same video in multiple qualities (1080p, 720p, 480p)
+├── thumbnails/    ← Preview images
+└── subtitles/     ← Subtitle/caption files
 ```
 
-**Lifecycle Policies — توفير التكلفة:**
+**Lifecycle Policies — Cut Costs:**
 ```
-الفيديو الجديد (0-30 يوم)    → S3 Standard         ($0.023/GB)
-الفيديو القديم (31-90 يوم)   → S3 Standard-IA      ($0.0125/GB)  توفير 45%
-الأرشيف (91-365 يوم)         → S3 Glacier          ($0.004/GB)   توفير 82%
-بعد سنة                      → حذف تلقائي           وفر مساحة
+New video  (0-30 days)    → S3 Standard      ($0.023/GB)
+Older video (31-90 days)  → S3 Standard-IA   ($0.0125/GB)  45% savings
+Archive    (91-365 days)  → S3 Glacier        ($0.004/GB)   82% savings
+After 1 year              → Auto-delete        Free up space
 ```
 
-**Storage Classes مهمة للامتحان:**
+**Storage Classes for the Exam:**
 
-| Class | الاستخدام | السعر النسبي |
-|-------|-----------|:---:|
-| Standard | بيانات يُصل إليها كثيراً | ████ |
-| Standard-IA | بيانات نادرة الوصول | ██ |
-| Glacier Instant | أرشيف، استرجاع فوري | █ |
-| Glacier Flexible | أرشيف، استرجاع 1-12 ساعة | ▌ |
-| Intelligent-Tiering | تحرك تلقائي بين الـ classes | ██ |
+| Class | Use Case | Relative Cost |
+|-------|----------|:-------------:|
+| Standard | Frequently accessed data | ████ |
+| Standard-IA | Infrequently accessed | ██ |
+| Glacier Instant | Archive, instant retrieval | █ |
+| Glacier Flexible | Archive, 1-12 hr retrieval | ▌ |
+| Intelligent-Tiering | Auto-moves between classes | ██ |
 
 ---
 
 ### 5️⃣ Application Load Balancer (ALB)
 
-**ما هو؟**
-موزع الحمل — مثل مدير الطابور في البنك يوجه كل عميل لأقرب موظف متاح.
+**What is it?**
+A load balancer distributes incoming traffic across multiple servers — like a bank teller directing customers to available windows.
 
-**كيف يعمل:**
+**How it works:**
 ```
-1000 مستخدم يطلبون الـ API في نفس اللحظة
+1,000 users hit the API at the same time
        ↓
-    ALB يوزعهم:
-    Server 1 ← 334 مستخدم
-    Server 2 ← 333 مستخدم
-    Server 3 ← 333 مستخدم
+    ALB distributes:
+    Server 1 ← 334 users
+    Server 2 ← 333 users
+    Server 3 ← 333 users
        ↓
-    لا يغرق أي server واحد ✅
+    No single server gets overwhelmed ✅
 ```
 
-**ALB vs NLB (للامتحان):**
+**ALB vs NLB (for the exam):**
+
 | | ALB | NLB |
 |--|-----|-----|
 | Layer | Layer 7 (HTTP/HTTPS) | Layer 4 (TCP/UDP) |
-| الاستخدام | تطبيقات ويب | Gaming, VoIP |
-| يفهم | URL, Headers | IP, Port فقط |
-| الـ Routing | بناء على المسار | بناء على الـ IP |
+| Use Case | Web applications | Gaming, VoIP |
+| Understands | URL, Headers | IP and Port only |
+| Routing | Path-based | IP-based |
 
 ---
 
 ### 6️⃣ Auto Scaling Group (ASG)
 
-**المشكلة:**
+**The problem:**
 ```
-العادي:  100 مستخدم  → تحتاج 2 servers
-رمضان:  10,000 مستخدم → تحتاج 200 server!
-بعد رمضان: 100 مستخدم  → 200 server تبقى تأكل فلوس!
-```
-
-**الحل مع Auto Scaling:**
-```
-Minimum: 2 servers دائماً (لضمان الـ availability)
-Desired: 5 servers في المعدل الطبيعي
-Maximum: 200 servers في أوقات الذروة
-
-↑ إذا CPU > 70% لمدة 5 دقائق → أضف 10 servers
-↓ إذا CPU < 30% لمدة 10 دقائق → احذف 5 servers
+Normal:   100 users   → need 2 servers
+Ramadan:  10,000 users → need 200 servers!
+After:    100 users   → 200 servers sitting idle, wasting money!
 ```
 
-**Scaling Policies:**
-| النوع | كيف يعمل | متى تستخدمه |
-|-------|-----------|-------------|
-| Target Tracking | حافظ على CPU=60% تلقائياً | الأفضل للمبتدئين |
-| Step Scaling | قواعد مخصصة (CPU>70% → +2) | تحكم أكثر |
-| Scheduled | في رمضان زد الـ servers مسبقاً | أحداث متوقعة |
-| Predictive | ML يتوقع ويزيد قبل الذروة | متقدم |
+**The solution with Auto Scaling:**
+```
+Minimum: 2 servers always (guarantees availability)
+Desired: 5 servers on average
+Maximum: 200 servers during peak
+
+↑ If CPU > 70% for 5 minutes → add 10 servers
+↓ If CPU < 30% for 10 minutes → remove 5 servers
+```
+
+**Scaling Policy Types:**
+
+| Type | How it works | When to use |
+|------|-------------|-------------|
+| Target Tracking | Keep CPU at 60% automatically | Best for beginners |
+| Step Scaling | Custom rules (CPU > 70% → +2) | More control |
+| Scheduled | Scale up before Ramadan/events | Predictable events |
+| Predictive | ML predicts and scales proactively | Advanced |
 
 ---
 
-### 7️⃣ ElastiCache Redis — الذاكرة السريعة
+### 7️⃣ ElastiCache Redis — In-Memory Speed Layer
 
-**لماذا نحتاجه؟**
+**Why do we need it?**
 ```
-بدون Cache:
-مستخدم يفتح الـ App → طلب للـ API → استعلام لـ Database (100ms)
-مستخدم ثانٍ نفس الطلب → طلب للـ API → استعلام لـ Database (100ms) مرة ثانية!
+Without cache:
+User opens app → API call → Database query (100ms)
+Second user, same request → API call → Database query (100ms) again!
 
-مع Redis Cache:
-مستخدم أول → API → Database (100ms) → نتيجة تُخزَّن في Redis
-مستخدم ثانٍ → API → Redis (0.5ms) ✅ أسرع 200 مرة!
+With Redis cache:
+First user  → API → Database (100ms) → result stored in Redis
+Second user → API → Redis (0.5ms) ✅  200x faster!
 ```
 
-**في مشروع Streaming نستخدم Redis لـ:**
-- تخزين الـ User Session (من سجّل دخول؟)
-- تخزين قائمة "Top 10 Videos" (تتغير كل ساعة فقط)
-- Rate Limiting (هذا المستخدم شاهد 3 إعلانات هذه الساعة)
+**In our streaming project, Redis stores:**
+- User session data (who is logged in?)
+- "Top 10 Videos" list (only changes once per hour)
+- Rate limiting (this user has seen 3 ads this hour)
 
 ---
 
-### 8️⃣ AWS MediaLive + MediaConvert — خط إنتاج الفيديو
+### 8️⃣ AWS MediaLive + MediaConvert — Video Processing
 
-**MediaLive:** لـ Live Streaming
+**MediaLive:** For Live Streaming
 ```
-مصدر مباشر (كاميرا/بث) → MediaLive → يحوله لـ HLS → CloudFront → المشاهدون
+Live source (camera/stream) → MediaLive → HLS output → CloudFront → Viewers
 ```
 
-**MediaConvert:** لـ VOD (فيديو عند الطلب)
+**MediaConvert:** For Video on Demand (VOD)
 ```
-ملف فيديو أصلي (4K, 10GB) → MediaConvert → 
-  ├── 1080p.m3u8 (للـ TV)
-  ├── 720p.m3u8  (للـ Laptop)
-  ├── 480p.m3u8  (للـ Mobile)
-  └── 360p.m3u8  (للاتصال البطيء)
-→ تُخزَّن في S3 → CloudFront يوصلها
+Original video (4K, 10GB) → MediaConvert →
+  ├── 1080p.m3u8  (for TV)
+  ├── 720p.m3u8   (for Laptop)
+  ├── 480p.m3u8   (for Mobile)
+  └── 360p.m3u8   (for slow connections)
+→ Stored in S3 → Delivered via CloudFront
 ```
 
 **Adaptive Bitrate Streaming:**
-Netflix وShahid تستخدم هذا — المشغل يختار الجودة تلقائياً حسب سرعة اتصالك!
+Netflix and YouTube use this — the player automatically adjusts quality based on your connection speed.
 
 ---
 
-## 🛠️ خطوات التنفيذ التفصيلية
+## 🛠️ Step-by-Step Implementation
 
-### المرحلة الأولى: الأساس (VPC والشبكة)
+### Phase 1: Foundation (VPC & Networking)
 
-**الخطوة 1: إنشاء VPC**
+**Step 1: Create VPC**
 
 ```
 AWS Console → VPC → Create VPC
 Name: streaming-platform-vpc
-CIDR: 10.0.0.0/16  (يتسع لـ 65,536 جهاز)
+CIDR: 10.0.0.0/16  (supports 65,536 devices)
 ```
 
-**لماذا CIDR = 10.0.0.0/16؟**
-- الـ /16 يعني أول 16 bit ثابتة
-- يعطيك 2^16 = 65,536 عنوان IP
-- أكثر من كافٍ لمشروعنا
+**Why CIDR = 10.0.0.0/16?**
+- /16 means the first 16 bits are fixed
+- Gives you 2^16 = 65,536 IP addresses
+- More than enough for our project
 
 ```
-الـ Subnets:
-Public Subnet 1 (us-east-1a):  10.0.1.0/24  ← ALB هنا
-Public Subnet 2 (us-east-1b):  10.0.2.0/24  ← ALB الثاني
-Private Subnet 1 (us-east-1a): 10.0.11.0/24 ← EC2 هنا
-Private Subnet 2 (us-east-1b): 10.0.12.0/24 ← EC2 الثاني
+Subnets:
+Public Subnet 1  (us-east-1a): 10.0.1.0/24  ← ALB lives here
+Public Subnet 2  (us-east-1b): 10.0.2.0/24  ← Second ALB
+Private Subnet 1 (us-east-1a): 10.0.11.0/24 ← EC2 servers
+Private Subnet 2 (us-east-1b): 10.0.12.0/24 ← EC2 servers
 ```
 
-**لماذا Public وPrivate؟**
-- Public: يمكن الوصول إليه من الإنترنت (ALB)
-- Private: محمي، لا يُرى من الإنترنت (Servers)
+**Why Public AND Private?**
+- Public: accessible from the internet (ALB)
+- Private: protected, not visible from the internet (Servers)
 
-**الخطوة 2: Internet Gateway**
+**Step 2: Internet Gateway**
 ```
 VPC → Internet Gateways → Create → Attach to VPC
 ```
-Internet Gateway = "الباب" بين VPC والإنترنت
+Internet Gateway = the "door" between your VPC and the internet
 
-**الخطوة 3: NAT Gateway**
+**Step 3: NAT Gateway**
 ```
 VPC → NAT Gateways → Create
 Subnet: Public Subnet 1
 Elastic IP: Allocate New
 ```
-NAT Gateway يسمح لـ Private Servers بالوصول للإنترنت (للـ Updates) دون أن يُرَوا من الخارج
+NAT Gateway allows private servers to reach the internet (for updates) without being reachable from outside.
 
-**الخطوة 4: Route Tables**
+**Step 4: Route Tables**
 ```
 Public Route Table:
-  0.0.0.0/0 → Internet Gateway (الإنترنت)
+  0.0.0.0/0 → Internet Gateway
 
 Private Route Table:
-  0.0.0.0/0 → NAT Gateway (عبر الـ NAT)
+  0.0.0.0/0 → NAT Gateway
 ```
 
 ---
 
-### المرحلة الثانية: S3 + CloudFront
+### Phase 2: S3 + CloudFront
 
-**الخطوة 5: إنشاء S3 Bucket**
+**Step 5: Create S3 Bucket**
 
-```bash
-# PowerShell على Windows
-aws s3 mb s3://streaming-platform-videos-YOUR_ACCOUNT_ID \
+```powershell
+# Windows PowerShell
+aws s3 mb s3://streaming-platform-videos-YOUR_ACCOUNT_ID `
   --region us-east-1
 
-# تفعيل Versioning
-aws s3api put-bucket-versioning \
-  --bucket streaming-platform-videos-YOUR_ACCOUNT_ID \
+# Enable Versioning
+aws s3api put-bucket-versioning `
+  --bucket streaming-platform-videos-YOUR_ACCOUNT_ID `
   --versioning-configuration Status=Enabled
 ```
 
-**لماذا Versioning؟**
-إذا حذفت فيديو بالغلط، تقدر تسترجعه. مهم للـ Production.
+**Why Versioning?**
+If you accidentally delete a video, you can restore it. Essential for production.
 
-**الخطوة 6: إعداد Lifecycle Policy**
+**Step 6: Set Up Lifecycle Policy**
 
 ```json
-// حفظ الملف كـ lifecycle.json
 {
   "Rules": [
     {
@@ -385,75 +388,74 @@ aws s3api put-bucket-versioning \
 }
 ```
 
-```bash
-aws s3api put-bucket-lifecycle-configuration \
-  --bucket streaming-platform-videos-YOUR_ACCOUNT_ID \
+```powershell
+aws s3api put-bucket-lifecycle-configuration `
+  --bucket streaming-platform-videos-YOUR_ACCOUNT_ID `
   --lifecycle-configuration file://lifecycle.json
 ```
 
-**الخطوة 7: إنشاء CloudFront Distribution**
+**Step 7: Create CloudFront Distribution**
 
 ```
 CloudFront → Create Distribution:
 
 Origin:
-  Origin Domain: streaming-platform-videos-YOUR_ACCOUNT_ID.s3.us-east-1.amazonaws.com
-  Origin Access: Origin Access Control (OAC) ← أمان أفضل من OAI
-  
+  Origin Domain: your-bucket.s3.us-east-1.amazonaws.com
+  Origin Access: Origin Access Control (OAC)
+
 Default Cache Behavior:
   Viewer Protocol Policy: Redirect HTTP to HTTPS
   Cache Policy: CachingOptimized
-  
-Price Class: Use All Edge Locations (الأفضل للأداء)
+
+Price Class: Use All Edge Locations
 
 WAF: Enable → Create new WAF
 ```
 
-> 💡 **ملاحظة:** CloudFront يأخذ 15-20 دقيقة لينتشر حول العالم
+> 💡 **Note:** CloudFront takes 15–20 minutes to propagate globally
 
 ---
 
-### المرحلة الثالثة: ALB + Auto Scaling
+### Phase 3: ALB + Auto Scaling
 
-**الخطوة 8: إنشاء Security Groups**
+**Step 8: Create Security Groups**
 
 ```
-Security Group للـ ALB:
-  Inbound:  Port 443 (HTTPS) من 0.0.0.0/0 (الإنترنت كله)
-  Outbound: Port 8080 للـ EC2 فقط
+ALB Security Group:
+  Inbound:  Port 443 (HTTPS) from 0.0.0.0/0
+  Outbound: Port 8080 to EC2 only
 
-Security Group للـ EC2:
-  Inbound:  Port 8080 من ALB Security Group فقط (!)
-  Outbound: كل شيء (للـ S3 وDatabase)
+EC2 Security Group:
+  Inbound:  Port 8080 from ALB Security Group only (!)
+  Outbound: Everything (for S3 and Database access)
 ```
 
-**لماذا نقيد الـ EC2؟**
-لا أحد يستطيع الوصول للـ Servers مباشرة. فقط عبر ALB. هذا أمان ضروري.
+**Why restrict EC2?**
+No one can reach the servers directly — only through the ALB. This is essential security.
 
-**الخطوة 9: إنشاء Launch Template**
+**Step 9: Create Launch Template**
 
 ```
 EC2 → Launch Templates → Create:
 
 AMI: Amazon Linux 2023
 Instance Type: t3.medium (2 vCPU, 4GB RAM)
-Key Pair: أنشئ واحداً جديداً واحفظ الـ .pem
+Key Pair: Create new, save the .pem file
 Security Group: EC2-SG
 
-User Data (يُشغَّل عند بدء الـ Instance):
+User Data (runs on instance start):
 #!/bin/bash
 yum update -y
 yum install -y nodejs npm
 npm install -g pm2
-# هنا تضع كود تطبيقك
 ```
 
-**الخطوة 10: إنشاء Auto Scaling Group**
+**Step 10: Create Auto Scaling Group**
 
 ```
 EC2 → Auto Scaling Groups → Create:
 
-Launch Template: الذي أنشأناه
+Launch Template: the one we created
 VPC: streaming-platform-vpc
 Subnets: Private-1a, Private-1b
 
@@ -468,9 +470,9 @@ Scaling Policy:
 
 ---
 
-### المرحلة الرابعة: Route 53 + WAF
+### Phase 4: Route 53 + WAF
 
-**الخطوة 11: إعداد Route 53**
+**Step 11: Configure Route 53**
 
 ```
 Route 53 → Hosted Zones → Create Hosted Zone:
@@ -486,71 +488,21 @@ Health Check:
   Threshold: 3 failures → Unhealthy
 ```
 
-**الخطوة 12: WAF Rules**
+**Step 12: WAF Rules**
 
 ```
 WAF → Web ACLs → Create:
   Resource: CloudFront Distribution
-  
+
 Add Rules:
-  1. AWSManagedRulesCommonRuleSet     ← يمنع OWASP Top 10
-  2. AWSManagedRulesKnownBadInputsRuleSet ← يمنع SQL Injection
+  1. AWSManagedRulesCommonRuleSet       ← Blocks OWASP Top 10
+  2. AWSManagedRulesKnownBadInputsRuleSet ← Blocks SQL Injection
   3. Custom Rate Limit: 2000 req/5min per IP
 ```
 
 ---
 
-### المرحلة الخامسة: Media Pipeline (Live Streaming)
-
-**الخطوة 13: إعداد MediaLive**
-
-```
-MediaLive → Channels → Create:
-  Input: RTMP (من برنامج البث مثل OBS)
-  Output: HLS → S3 → CloudFront
-  
-Settings:
-  Output Groups → HLS:
-    Segment Length: 6 seconds
-    Destination: s3://streaming-platform-videos/live/
-```
-
-**الخطوة 14: MediaConvert للـ VOD**
-
-```python
-# سكريبت Python لإرسال فيديو للمعالجة
-import boto3
-
-mediaconvert = boto3.client('mediaconvert', region_name='us-east-1')
-
-job = mediaconvert.create_job(
-    Role='arn:aws:iam::ACCOUNT_ID:role/MediaConvertRole',
-    Settings={
-        'Inputs': [{
-            'FileInput': 's3://streaming-platform-videos/raw/movie.mp4'
-        }],
-        'OutputGroups': [{
-            'OutputGroupSettings': {
-                'Type': 'HLS_GROUP_SETTINGS',
-                'HlsGroupSettings': {
-                    'Destination': 's3://streaming-platform-videos/processed/movie/'
-                }
-            },
-            'Outputs': [
-                {'VideoDescription': {'Width': 1920, 'Height': 1080}},  # 1080p
-                {'VideoDescription': {'Width': 1280, 'Height': 720}},   # 720p
-                {'VideoDescription': {'Width': 854,  'Height': 480}},   # 480p
-            ]
-        }]
-    }
-)
-
-print(f"Job created: {job['Job']['Id']}")
-```
-
----
-
-## 📊 CloudFormation Template — النشر التلقائي
+## 📊 CloudFormation Template
 
 ```yaml
 # cloudformation/01-vpc.yaml
@@ -564,7 +516,6 @@ Parameters:
     AllowedValues: [dev, staging, prod]
 
 Resources:
-  # VPC الرئيسي
   StreamingVPC:
     Type: AWS::EC2::VPC
     Properties:
@@ -575,7 +526,6 @@ Resources:
         - Key: Name
           Value: !Sub '${Environment}-streaming-vpc'
 
-  # Public Subnets
   PublicSubnet1:
     Type: AWS::EC2::Subnet
     Properties:
@@ -598,7 +548,6 @@ Resources:
         - Key: Name
           Value: !Sub '${Environment}-public-2'
 
-  # Private Subnets
   PrivateSubnet1:
     Type: AWS::EC2::Subnet
     Properties:
@@ -619,7 +568,6 @@ Resources:
         - Key: Name
           Value: !Sub '${Environment}-private-2'
 
-  # Internet Gateway
   InternetGateway:
     Type: AWS::EC2::InternetGateway
 
@@ -629,7 +577,6 @@ Resources:
       VpcId: !Ref StreamingVPC
       InternetGatewayId: !Ref InternetGateway
 
-  # NAT Gateway
   NatEIP:
     Type: AWS::EC2::EIP
     Properties:
@@ -641,7 +588,6 @@ Resources:
       AllocationId: !GetAtt NatEIP.AllocationId
       SubnetId: !Ref PublicSubnet1
 
-  # Route Tables
   PublicRouteTable:
     Type: AWS::EC2::RouteTable
     Properties:
@@ -685,126 +631,106 @@ Outputs:
 
 ---
 
-## 🪟 سكريبت النشر (Windows PowerShell)
+## 🪟 Deployment Script (Windows PowerShell)
 
 ```powershell
 # scripts/deploy.ps1
-
 param(
     [string]$Environment = "dev",
     [string]$Region = "us-east-1",
     [string]$AccountId = (aws sts get-caller-identity --query Account --output text)
 )
 
-Write-Host "🚀 بدء نشر Streaming Platform - بيئة: $Environment" -ForegroundColor Cyan
+Write-Host "Deploying Streaming Platform - Environment: $Environment" -ForegroundColor Cyan
 
-# الخطوة 1: نشر VPC
-Write-Host "`n📦 الخطوة 1: إنشاء VPC..." -ForegroundColor Yellow
+Write-Host "Step 1: Creating VPC..." -ForegroundColor Yellow
 aws cloudformation deploy `
     --template-file cloudformation/01-vpc.yaml `
     --stack-name "$Environment-streaming-vpc" `
     --parameter-overrides Environment=$Environment `
     --region $Region
 
-if ($LASTEXITCODE -ne 0) {
-    Write-Host "❌ فشل إنشاء VPC!" -ForegroundColor Red
-    exit 1
-}
-Write-Host "✅ VPC جاهز!" -ForegroundColor Green
+if ($LASTEXITCODE -ne 0) { Write-Host "VPC creation failed!" -ForegroundColor Red; exit 1 }
+Write-Host "VPC ready!" -ForegroundColor Green
 
-# الخطوة 2: إنشاء S3 Bucket
-Write-Host "`n📦 الخطوة 2: إنشاء S3 Bucket..." -ForegroundColor Yellow
+Write-Host "Step 2: Creating S3 Bucket..." -ForegroundColor Yellow
 $BucketName = "streaming-platform-videos-$AccountId-$Environment"
 aws s3 mb "s3://$BucketName" --region $Region
 aws s3api put-bucket-versioning `
     --bucket $BucketName `
     --versioning-configuration Status=Enabled
 
-Write-Host "✅ S3 Bucket جاهز: $BucketName" -ForegroundColor Green
-
-Write-Host "`n🎉 تم النشر بنجاح!" -ForegroundColor Cyan
-Write-Host "CloudFront URL سيظهر بعد 15-20 دقيقة" -ForegroundColor Gray
+Write-Host "Deployment complete!" -ForegroundColor Cyan
 ```
 
 ---
 
-## 🧪 أسئلة امتحان SAA-C03 المتوقعة
+## 🧪 Expected SAA-C03 Exam Questions
 
-> هذه أنماط أسئلة حقيقية من الامتحان:
+**Question 1:**
+A company wants to reduce video loading latency for users in 50 countries. What is the best solution?
 
-**❓ السؤال 1:**
-شركة تريد تقليل تأخير تحميل الفيديو لمستخدمين في 50 دولة. ما الحل الأمثل؟
-
-**✅ الجواب:** Amazon CloudFront مع Edge Locations — يخزن المحتوى قريباً من كل مستخدم
+**Answer:** Amazon CloudFront with Edge Locations — caches content close to every user.
 
 ---
 
-**❓ السؤال 2:**
-موقع streaming يتوقع زيادة 10x في الزوار خلال رمضان. كيف تضمن الأداء مع تقليل التكلفة باقي السنة؟
+**Question 2:**
+A streaming site expects 10x traffic during Ramadan. How do you ensure performance while minimizing cost the rest of the year?
 
-**✅ الجواب:** Auto Scaling Group مع Scheduled Scaling (زيادة تلقائية في رمضان) + Spot Instances للتوفير
-
----
-
-**❓ السؤال 3:**
-فيديوهات مدفوعة يجب أن لا تُشاهَد بدون اشتراك. كيف تحميها في CloudFront؟
-
-**✅ الجواب:** CloudFront Signed URLs أو Signed Cookies — روابط مشفرة تنتهي صلاحيتها
+**Answer:** Auto Scaling Group with Scheduled Scaling (scale up before Ramadan) + Spot Instances for cost savings.
 
 ---
 
-**❓ السؤال 4:**
-تريد تقليل تكلفة تخزين فيديوهات عمرها أكثر من سنة لكن لا تريد حذفها.
+**Question 3:**
+Paid videos must not be viewable without a subscription. How do you protect them in CloudFront?
 
-**✅ الجواب:** S3 Lifecycle Policy → بعد 365 يوم → S3 Glacier Deep Archive
+**Answer:** CloudFront Signed URLs or Signed Cookies — encrypted links with expiry times.
 
 ---
 
-## ✅ قائمة التحقق النهائية
+**Question 4:**
+You want to reduce storage costs for videos older than one year without deleting them.
+
+**Answer:** S3 Lifecycle Policy → After 365 days → S3 Glacier Deep Archive.
+
+---
+
+## ✅ Final Checklist
 
 ```
 Infrastructure:
-□ VPC مع Public/Private Subnets في Availability Zone مختلفتين
+□ VPC with Public/Private Subnets across two Availability Zones
 □ Internet Gateway + NAT Gateway
-□ Route Tables صحيحة لكل Subnet
-□ Security Groups محدودة (Least Privilege)
+□ Correct Route Tables for each subnet
+□ Security Groups following Least Privilege principle
 
 CDN & Storage:
-□ S3 Bucket مع Versioning وLifecycle Policy
-□ CloudFront مع OAC (Origin Access Control)
-□ HTTPS مفعّل بشكل إجباري
-□ WAF مرتبط بـ CloudFront
+□ S3 Bucket with Versioning and Lifecycle Policy
+□ CloudFront with OAC (Origin Access Control)
+□ HTTPS enforced
+□ WAF attached to CloudFront
 
 Compute:
-□ Launch Template بـ User Data صحيح
-□ Auto Scaling Group في Private Subnets
-□ ALB في Public Subnets
-□ Target Group بـ Health Checks
+□ Launch Template with correct User Data
+□ Auto Scaling Group in Private Subnets
+□ ALB in Public Subnets
+□ Target Group with Health Checks
 
 Monitoring:
-□ CloudWatch Dashboard للـ Metrics الرئيسية
-□ Alarms على CPU, ALB 5xx, Cache Hit Rate
-□ CloudTrail مفعّل لتتبع كل API calls
+□ CloudWatch Dashboard for key metrics
+□ Alarms for CPU, ALB 5xx errors, Cache Hit Rate
+□ CloudTrail enabled for API call tracking
 
 Cost:
-□ S3 Intelligent-Tiering للـ Objects غير المعروفة الاستخدام
-□ Reserved Instances للـ EC2 الثابتة
-□ Cost Budget بـ Alert عند 80%
+□ S3 Intelligent-Tiering for unknown-access objects
+□ Reserved Instances for stable EC2
+□ Cost Budget with 80% alert
 ```
-
----
-
-## 📎 موارد إضافية
-
-- 📖 [AWS CloudFront Developer Guide](https://docs.aws.amazon.com/cloudfront/)
-- 📖 [Auto Scaling Best Practices](https://docs.aws.amazon.com/autoscaling/ec2/userguide/auto-scaling-best-practices.html)
-- 🎥 [AWS re:Invent: Building Video Streaming Platforms](https://www.youtube.com/aws)
-- 🧪 [AWS Free Tier Limits](https://aws.amazon.com/free/)
 
 ---
 
 <div align="center">
 
-[⬅️ العودة للرئيسية](../README.md) | [➡️ المشروع الثاني: Serverless Banking](../project-02-serverless-banking/README.md)
+[⬅️ Back to Main](../README.md) | [➡️ Project 02: Serverless Banking](../project-02-serverless-banking/README.md)
 
 </div>
